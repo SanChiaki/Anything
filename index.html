@@ -145,17 +145,56 @@
         </main>
     </div>
     <script>
+        let allArticles = [];
+
+        // 从 URL 获取 article 参数
+        function getArticleFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('article');
+        }
+
+        // 更新 URL（不刷新页面）
+        function updateURL(path) {
+            const url = new URL(window.location);
+            if (path) {
+                url.searchParams.set('article', path);
+            } else {
+                url.searchParams.delete('article');
+            }
+            history.replaceState({}, '', url);
+        }
+
+        // 监听浏览器前进/后退
+        window.addEventListener('popstate', () => {
+            const target = getArticleFromURL();
+            if (target) {
+                const article = allArticles.find(a => a.path === target);
+                if (article) {
+                    highlightArticle(target);
+                    loadArticle(article.path, article.title, false);
+                }
+            }
+        });
+
+        function highlightArticle(path) {
+            document.querySelectorAll('.article-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.article-item').forEach(el => {
+                if (el.dataset.path === path) el.classList.add('active');
+            });
+        }
+
         async function init() {
             const listContainer = document.getElementById('article-list');
             
             try {
                 const res = await fetch('./articles.json');
-                const articles = await res.json();
+                allArticles = await res.json();
                 
                 listContainer.innerHTML = '';
-                articles.forEach((article, index) => {
+                allArticles.forEach((article, index) => {
                     const item = document.createElement('div');
                     item.className = 'article-item';
+                    item.dataset.path = article.path;
                     item.innerHTML = `
                         <h3>${article.title}</h3>
                         <div class="meta">
@@ -164,31 +203,43 @@
                         </div>
                     `;
                     item.onclick = () => {
-                        document.querySelectorAll('.article-item').forEach(el => el.classList.remove('active'));
-                        item.classList.add('active');
-                        loadArticle(article.path, article.title);
+                        highlightArticle(article.path);
+                        loadArticle(article.path, article.title, true);
                     };
                     listContainer.appendChild(item);
-                    
-                    // Auto-load first article
-                    if (index === 0) item.click(); 
                 });
+                
+                // 检查 URL 是否指定了文章
+                const target = getArticleFromURL();
+                if (target) {
+                    const article = allArticles.find(a => a.path === target);
+                    if (article) {
+                        highlightArticle(target);
+                        loadArticle(article.path, article.title, false);
+                        return;
+                    }
+                }
+                
+                // 默认加载第一篇文章
+                if (allArticles.length > 0 && allArticles[0].path) {
+                    highlightArticle(allArticles[0].path);
+                    loadArticle(allArticles[0].path, allArticles[0].title, false);
+                }
             } catch (err) {
                 listContainer.innerHTML = '<div class="loading">Failed to load article list.</div>';
                 console.error(err);
             }
         }
 
-        async function loadArticle(path, title) {
+        async function loadArticle(path, title, updateUrl = true) {
             const contentContainer = document.getElementById('content');
             contentContainer.innerHTML = '<div class="loading">Loading content...</div>';
             try {
                 const res = await fetch('./' + path);
                 const text = await res.text();
-                // 修复：不再重复添加标题，直接渲染 Markdown 内容
                 contentContainer.innerHTML = marked.parse(text);
-                window.scrollTo(0,0); // Scroll to top
                 contentContainer.scrollTop = 0;
+                if (updateUrl) updateURL(path);
             } catch (err) {
                 contentContainer.innerHTML = '<div class="loading">Failed to load content.</div>';
                 console.error(err);
