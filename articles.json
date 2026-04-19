@@ -1,5 +1,13 @@
 [
   {
+    "title": "Agent Harness 架构解剖",
+    "date": "2026-04-18",
+    "type": "article",
+    "url": "https://x.com/akshay_pachaar/status/2041146899319971922",
+    "author": "Akshay Pachaar",
+    "summary": "深入分析 Anthropic、OpenAI、LangChain 等框架的 Agent Harness 架构，涵盖 12 个核心组件、7 个关键设计决策，以及 thin harness 趋势。"
+  },
+  {
     "title": "三省六部幻觉：为什么'虚拟公司'式多 Agent 架构在工程上不成立",
     "path": "articles/2026-04-14-三省六部幻觉.md",
     "date": "2026-04-14",
